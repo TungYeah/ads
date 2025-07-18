@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-AdsApplication<ads>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "vn.minhtung.ads.AdsApplication",
+            "projectName": "ads",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
