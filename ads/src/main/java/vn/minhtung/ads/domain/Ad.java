@@ -30,12 +30,6 @@ public class Ad {
 
     private String targetUrl;
 
-    private double budget;
-
-    private long impressionCount = 0;
-
-    private long clickCount = 0;
-
     private Instant startDate;
     private Instant endDate;
 
