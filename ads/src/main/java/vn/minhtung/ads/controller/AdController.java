@@ -5,9 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.turkraft.springfilter.boot.Filter;
-
 import jakarta.validation.Valid;
 import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
@@ -34,7 +32,7 @@ public class AdController {
 
     @GetMapping("/ads")
     public ResponseEntity<ResultPageinationDTO> getAllAds(@Filter Specification<Ad> spec, Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(this.adService.getAllAds(spec, pageable));
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.adService.getAllAds(spec, pageable));
     }
 
     @GetMapping("/ads/{id}")

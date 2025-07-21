@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.minhtung.ads.domain.Role;
+import vn.minhtung.ads.domain.response.Role.RoleDTO;
 
 @Getter
 @Setter
@@ -18,20 +20,23 @@ public class ResLoginDTO {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class UserLogin{
+    public static class UserLogin {
 
         private long id;
 
         private String email;
 
         private String name;
+
+        private RoleDTO role;
     }
 
     @Getter
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class UserGetAccount{
+    public static class UserGetAccount {
         private UserLogin user;
     }
+
 }

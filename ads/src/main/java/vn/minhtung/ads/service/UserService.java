@@ -4,14 +4,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import vn.minhtung.ads.domain.Role;
 import vn.minhtung.ads.domain.User;
 import vn.minhtung.ads.domain.dto.*;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
+import vn.minhtung.ads.domain.response.Role.RoleDTO;
+import vn.minhtung.ads.domain.response.Role.RoleDTO.PermissionDTO;
 import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
 import vn.minhtung.ads.domain.response.user.CreateUserDTO;
 import vn.minhtung.ads.domain.response.user.GetUserByIdDTO;
 import vn.minhtung.ads.domain.response.user.UpdateUserDTO;
 import vn.minhtung.ads.repository.UserRepository;
+import vn.minhtung.ads.util.errors.IdInvalidException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -21,14 +26,20 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleService roleService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, RoleService roleService) {
         this.userRepository = userRepository;
+        this.roleService = roleService;
     }
 
-    public User handleUser(User user) {
+    public User handleUser(User user) throws IdInvalidException {
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("Email already exits");
+            throw new IdInvalidException("Email already exits");
+        }
+        if (user.getRole() != null) {
+            Role role = this.roleService.getById(user.getRole().getId());
+            user.setRole(role != null ? role : null);
         }
         return this.userRepository.save(user);
     }
@@ -58,6 +69,18 @@ public class UserService {
                                     ad.getEndDate()))
                             .collect(Collectors.toList());
 
+                    RoleDTO roleDTO = new RoleDTO();
+                    if (user.getRole() != null) {
+                        Role role = user.getRole();
+                        List<PermissionDTO> permissionDTOs = role.getPermissions() != null
+                                ? role.getPermissions().stream()
+                                        .map(p -> new PermissionDTO(p.getId(), p.getName()))
+                                        .collect(Collectors.toList())
+                                : null;
+
+                        roleDTO = new RoleDTO(role.getId(), role.getName(), permissionDTOs);
+                    }
+
                     return new GetUserByIdDTO(
                             user.getId(),
                             user.getName(),
@@ -67,7 +90,8 @@ public class UserService {
                             user.getAddress(),
                             user.getCreatedAt(),
                             user.getUpdatedAt(),
-                            ads);
+                            ads,
+                            roleDTO);
                 }).collect(Collectors.toList());
 
         rs.setResult(listUser);
@@ -85,6 +109,12 @@ public class UserService {
             currentUser.setGender(updatedUser.getGender());
             currentUser.setAge(updatedUser.getAge());
             currentUser.setName(updatedUser.getName());
+            currentUser = this.userRepository.save(currentUser);
+
+            if (updatedUser.getRole() != null) {
+                Role role = this.roleService.getById(updatedUser.getRole().getId());
+                currentUser.setRole(role != null ? role : null);
+            }
             currentUser = this.userRepository.save(currentUser);
         }
         return currentUser;

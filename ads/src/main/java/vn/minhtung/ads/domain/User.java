@@ -57,6 +57,10 @@ public class User {
     @JsonIgnore
     private List<Ad> adsList = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
     @PrePersist
     public void handleBeforeCreate() {
         this.createdBy = SecutiryUtil.getCurrentUserLogin().isPresent() == true

@@ -30,7 +30,7 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<CreateUserDTO> createUser(@Valid @RequestBody User user) {
+    public ResponseEntity<CreateUserDTO> createUser(@Valid @RequestBody User user) throws IdInvalidException {
         String hashPassword = this.passwordEncoder.encode(user.getPassword());
         user.setPassword(hashPassword);
         User postUser = this.userService.handleUser(user);

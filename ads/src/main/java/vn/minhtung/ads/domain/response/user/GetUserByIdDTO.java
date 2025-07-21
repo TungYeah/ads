@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.minhtung.ads.domain.response.Role.RoleDTO;
 import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
 import vn.minhtung.ads.util.constant.GenderEnum;
 
@@ -33,4 +34,5 @@ public class GetUserByIdDTO {
 
     private List<GetAdByIdDTO> ads;
 
+    private RoleDTO role;
 }
