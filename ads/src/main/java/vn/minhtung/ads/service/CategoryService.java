@@ -9,11 +9,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.minhtung.ads.domain.Category;
-import vn.minhtung.ads.domain.dto.CreateCategoryDTO;
-import vn.minhtung.ads.domain.dto.GetAdByIdDTO;
-import vn.minhtung.ads.domain.dto.GetCategoryByIdDTO;
-import vn.minhtung.ads.domain.dto.Meta;
+
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
+import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
+import vn.minhtung.ads.domain.response.category.CreateCategoryDTO;
+import vn.minhtung.ads.domain.response.category.GetCategoryByIdDTO;
 import vn.minhtung.ads.repository.CategoryReposity;
 
 @Service

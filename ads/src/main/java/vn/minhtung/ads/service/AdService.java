@@ -14,10 +14,11 @@ import org.springframework.stereotype.Service;
 import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.Category;
 import vn.minhtung.ads.domain.User;
-import vn.minhtung.ads.domain.dto.CreateAdDTO;
-import vn.minhtung.ads.domain.dto.Meta;
-import vn.minhtung.ads.domain.dto.ResAdById;
+
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
+import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
+import vn.minhtung.ads.domain.response.ad.ResAdById;
 import vn.minhtung.ads.repository.AdRepository;
 import vn.minhtung.ads.repository.CategoryReposity;
 import vn.minhtung.ads.repository.UserRepository;

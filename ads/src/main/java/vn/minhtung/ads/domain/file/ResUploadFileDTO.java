@@ -1,4 +1,6 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.file;
+
+import java.time.Instant;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,9 +11,8 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserDTO {
-    private Long id;
-    private String name;
-    private String email;
+public class ResUploadFileDTO {
 
+    private String fileName;
+    private Instant uploadedAt;
 }

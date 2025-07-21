@@ -10,9 +10,9 @@ import com.turkraft.springfilter.boot.Filter;
 
 import jakarta.validation.Valid;
 import vn.minhtung.ads.domain.Ad;
-import vn.minhtung.ads.domain.dto.CreateAdDTO;
-import vn.minhtung.ads.domain.dto.ResAdById;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
+import vn.minhtung.ads.domain.response.ad.ResAdById;
 import vn.minhtung.ads.service.AdService;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 

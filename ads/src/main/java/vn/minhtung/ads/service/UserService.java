@@ -6,6 +6,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.minhtung.ads.domain.User;
 import vn.minhtung.ads.domain.dto.*;
+import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
+import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
+import vn.minhtung.ads.domain.response.user.CreateUserDTO;
+import vn.minhtung.ads.domain.response.user.GetUserByIdDTO;
+import vn.minhtung.ads.domain.response.user.UpdateUserDTO;
 import vn.minhtung.ads.repository.UserRepository;
 
 import java.util.List;
@@ -38,7 +43,6 @@ public class UserService {
         mt.setPages(pageUser.getTotalPages());
         mt.setTotal(pageUser.getTotalElements());
         rs.setMeta(mt);
-
 
         List<GetUserByIdDTO> listUser = pageUser.getContent()
                 .stream().map(user -> {

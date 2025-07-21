@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.response.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,13 +7,13 @@ import lombok.Setter;
 import vn.minhtung.ads.util.constant.GenderEnum;
 
 import java.time.Instant;
-import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetUserByIdDTO {
+public class CreateUserDTO {
+
     private long id;
 
     private String name;
@@ -27,9 +27,5 @@ public class GetUserByIdDTO {
     private String address;
 
     private Instant createdAt;
-
-    private Instant updateAt;
-
-    private List<GetAdByIdDTO> ads;
 
 }

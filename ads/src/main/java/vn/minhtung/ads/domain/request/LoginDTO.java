@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

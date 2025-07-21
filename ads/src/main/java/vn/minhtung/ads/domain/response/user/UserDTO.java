@@ -1,17 +1,17 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.response.user;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Setter
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateCategoryDTO {
-
-    @NotBlank(message = "Ko dc de trong ten danh muc")
+public class UserDTO {
+    private Long id;
     private String name;
+    private String email;
+
 }

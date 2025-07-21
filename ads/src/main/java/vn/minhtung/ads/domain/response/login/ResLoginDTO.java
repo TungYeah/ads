@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.response.login;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

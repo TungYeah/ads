@@ -1,23 +1,33 @@
-package vn.minhtung.ads.domain.dto;
-
-import java.time.Instant;
+package vn.minhtung.ads.domain.response.ad;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResAdById {
+public class UpdateAdDTO {
+
     private Long id;
+
     private String title;
+
     private String description;
+
     private String imageUrl;
+
     private String targetUrl;
+
     private Instant startDate;
     private Instant endDate;
-    private String category;
+
+    private Instant updatedAt;
+
+    private String updatedBy;
+
 }

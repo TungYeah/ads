@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.minhtung.ads.domain.Category;
-import vn.minhtung.ads.domain.dto.CreateCategoryDTO;
-import vn.minhtung.ads.domain.dto.GetCategoryByIdDTO;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+import vn.minhtung.ads.domain.response.category.CreateCategoryDTO;
+import vn.minhtung.ads.domain.response.category.GetCategoryByIdDTO;
 import vn.minhtung.ads.service.CategoryService;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 

@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.response.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

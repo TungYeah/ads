@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.dto;
+package vn.minhtung.ads.domain.response.category;
 
 import java.util.List;
 
@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
 
 @Setter
 @Getter
