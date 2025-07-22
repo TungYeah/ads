@@ -61,6 +61,10 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<AdView> adViews = new ArrayList<>();
+
     @PrePersist
     public void handleBeforeCreate() {
         this.createdBy = SecutiryUtil.getCurrentUserLogin().isPresent() == true

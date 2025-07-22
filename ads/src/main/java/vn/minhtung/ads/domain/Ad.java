@@ -5,8 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import vn.minhtung.ads.util.SecutiryUtil;
+import vn.minhtung.ads.util.constant.StatusEnum;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -30,6 +34,10 @@ public class Ad {
 
     private String targetUrl;
 
+    private StatusEnum status;
+
+    private BigDecimal budgetTotal;
+
     private Instant startDate;
     private Instant endDate;
 
@@ -40,7 +48,6 @@ public class Ad {
     private String updatedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "users_id")
     @JsonIgnore
     private User user;
 
@@ -48,6 +55,10 @@ public class Ad {
     @JoinColumn(name = "categories_id")
     @JsonIgnore
     private Category category;
+
+    @OneToMany(mappedBy = "ad", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<AdView> adViews = new ArrayList<>();
 
     @PrePersist
     public void handleBeforeCreate() {

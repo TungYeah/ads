@@ -1,6 +1,5 @@
 package vn.minhtung.ads.util;
 
-
 import com.nimbusds.jose.util.Base64;
 
 import vn.minhtung.ads.domain.response.login.ResLoginDTO;
@@ -27,7 +26,7 @@ public class SecutiryUtil {
 
     private final JwtEncoder jwtEncoder;
 
-    public SecutiryUtil(JwtEncoder jwtEncoder){
+    public SecutiryUtil(JwtEncoder jwtEncoder) {
         this.jwtEncoder = jwtEncoder;
     }
 
@@ -41,29 +40,26 @@ public class SecutiryUtil {
     @Value("${minhtung.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpriation;
 
-
-
     public String createAccessToken(String email, ResLoginDTO.UserLogin dto) {
         Instant now = Instant.now();
         Instant validity = now.plus(this.accessTokenExpriation, ChronoUnit.SECONDS);
 
-        List<String> listAuthority = new ArrayList<String>();
+        List<String> listAuthority = new ArrayList<>();
+        if (dto.getRole() != null && dto.getRole().getName() != null) {
+            String roleName = dto.getRole().getName().toUpperCase();
+            listAuthority.add("ROLE_" + roleName); 
+        }
 
-        listAuthority.add("ROLE_USER_CREATE");
-        listAuthority.add("ROLE_USER_UPDATE");
-
-        // @formatter:off
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuedAt(now)
                 .expiresAt(validity)
                 .subject(email)
-                .claim("user", dto)
+                .claim("user", dto) 
                 .claim("permission", listAuthority)
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
-
     }
 
     public String createRefreshToken(String email, ResLoginDTO resLoginDTO) {
