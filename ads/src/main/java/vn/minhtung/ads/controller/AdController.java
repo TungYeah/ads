@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
@@ -37,11 +39,12 @@ public class AdController {
     }
 
     @GetMapping("/ads/{id}")
-    public ResponseEntity<ResAdById> getAdById(@PathVariable long id) throws IdInvalidException {
+    public ResponseEntity<ResAdById> getAdById(@PathVariable long id, HttpServletRequest request) throws IdInvalidException {
         Ad adGetId = this.adService.getAdById(id);
         if (adGetId == null) {
             throw new IdInvalidException("Không tìm thấy id quảng cáo: " + id);
         }
+        adService.logAdView(adGetId, request);
         Ad ad = this.adService.getAdById(id);
         return ResponseEntity.status(HttpStatus.OK).body(this.adService.convertToGetAdByIdDTO(ad));
     }

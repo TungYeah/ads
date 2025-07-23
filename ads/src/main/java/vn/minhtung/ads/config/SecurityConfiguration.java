@@ -54,32 +54,33 @@ public class SecurityConfiguration {
     }
 
     @Bean
-public JwtAuthenticationConverter jwtAuthenticationConverter() {
-    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-    converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-        List<GrantedAuthority> authorities = new ArrayList<>();
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            List<GrantedAuthority> authorities = new ArrayList<>();
 
-        List<String> permissions = jwt.getClaimAsStringList("permission");
-        if (permissions != null) {
-            for (String p : permissions) {
-                authorities.add(new SimpleGrantedAuthority(p));
+            // Lấy quyền từ claim "permission"
+            List<String> permissions = jwt.getClaimAsStringList("permission");
+            if (permissions != null) {
+                for (String p : permissions) {
+                    authorities.add(new SimpleGrantedAuthority(p));
+                }
             }
-        }
 
-        Map<String, Object> user = jwt.getClaimAsMap("user");
-        if (user != null) {
-            Object roleObj = user.get("role");
-            if (roleObj instanceof Map<?, ?> roleMap && roleMap.get("name") != null) {
-                String roleName = roleMap.get("name").toString().toUpperCase();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+            // Lấy role từ "user.role.name"
+            Map<String, Object> user = jwt.getClaimAsMap("user");
+            if (user != null) {
+                Object roleObj = user.get("role");
+                if (roleObj instanceof Map<?, ?> roleMap && roleMap.get("name") != null) {
+                    String roleName = roleMap.get("name").toString().toUpperCase();
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+                }
             }
-        }
 
-        return authorities;
-    });
-    return converter;
-}
-
+            return authorities;
+        });
+        return converter;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(
@@ -94,18 +95,22 @@ public JwtAuthenticationConverter jwtAuthenticationConverter() {
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
+                // Bỏ qua xác thực cho endpoint công khai
                 .requestMatchers(publicEndpoints).permitAll()
 
-                // Cho phép USER và ADMIN xem quảng cáo
+                // Chỉ USER (và ADMIN, vì có quyền cao hơn) được GET /ads/**
                 .requestMatchers(HttpMethod.GET, "/api/v1/ads/**").hasAnyRole("USER", "ADMIN")
 
-                // Chỉ ADMIN mới được thao tác ads ngoài GET
+                // Chỉ ADMIN mới được thực hiện các phương thức khác (POST/PUT/DELETE) với ads
                 .requestMatchers("/api/v1/ads/**").hasRole("ADMIN")
 
-                // Chỉ ADMIN được thao tác role/permission
-                .requestMatchers("/api/v1/roles/**", "/api/v1/permissions/**").hasRole("ADMIN")
+                // Chỉ ADMIN được thao tác các route quan trọng
+                .requestMatchers("/api/v1/roles/**", "/api/v1/permissions/**", "/api/v1/ad-views/**").hasRole("ADMIN")
 
-                // Tất cả route khác yêu cầu xác thực
+                // Cho phép ADMIN truy cập tất cả các route khác
+                .requestMatchers("/**").hasRole("ADMIN")
+
+                // ✅ Các role khác phải xác thực mới truy cập được
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

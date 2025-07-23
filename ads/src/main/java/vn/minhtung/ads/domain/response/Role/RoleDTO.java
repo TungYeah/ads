@@ -1,4 +1,4 @@
-package vn.minhtung.ads.domain.response.Role;
+package vn.minhtung.ads.domain.response.role;
 
 import java.util.List;
 

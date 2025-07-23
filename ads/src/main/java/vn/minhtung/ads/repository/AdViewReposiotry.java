@@ -1,18 +1,14 @@
 package vn.minhtung.ads.repository;
 
-import java.time.Instant;
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import vn.minhtung.ads.domain.Ad;
+import vn.minhtung.ads.domain.AdView;
 
 @Repository
-public interface AdRepository extends JpaRepository<Ad, Long>, JpaSpecificationExecutor<Ad> {
+public interface AdViewReposiotry extends JpaRepository<AdView, Long>, JpaSpecificationExecutor<AdView> {
 
-    List<Ad> findByEndDateBefore(Instant endDate);
-
+    long countByAdId(long adId);
 
 }

@@ -1,17 +1,25 @@
 package vn.minhtung.ads.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import org.apache.catalina.security.SecurityUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import vn.minhtung.ads.domain.Ad;
+import vn.minhtung.ads.domain.AdView;
 import vn.minhtung.ads.domain.Category;
 import vn.minhtung.ads.domain.User;
 
@@ -20,8 +28,11 @@ import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
 import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
 import vn.minhtung.ads.domain.response.ad.ResAdById;
 import vn.minhtung.ads.repository.AdRepository;
+import vn.minhtung.ads.repository.AdViewReposiotry;
 import vn.minhtung.ads.repository.CategoryReposity;
 import vn.minhtung.ads.repository.UserRepository;
+import vn.minhtung.ads.util.SecutiryUtil;
+import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @Service
 public class AdService {
@@ -29,11 +40,16 @@ public class AdService {
     private final AdRepository adRepository;
     private final UserRepository userRepository;
     private final CategoryReposity categoryReposity;
+    private final AdViewReposiotry adViewRepository;
 
-    public AdService(AdRepository adRepository, UserRepository userRepository, CategoryReposity categoryReposity) {
+    public AdService(AdRepository adRepository,
+            UserRepository userRepository,
+            CategoryReposity categoryReposity,
+            AdViewReposiotry adViewRepository) {
         this.adRepository = adRepository;
         this.userRepository = userRepository;
         this.categoryReposity = categoryReposity;
+        this.adViewRepository = adViewRepository;
     }
 
     private User getCurrentUser() {
@@ -115,6 +131,7 @@ public class AdService {
         createAdDTO.setImageUrl(ad.getImageUrl());
         createAdDTO.setTargetUrl(ad.getTargetUrl());
         createAdDTO.setStartDate(ad.getStartDate());
+        createAdDTO.setEndDate(ad.getEndDate());
 
         if (ad.getCategory() != null) {
             createAdDTO.setCategory(ad.getCategory().getName());
@@ -140,5 +157,34 @@ public class AdService {
             throw new NoSuchElementException("Ad not found");
         }
         this.adRepository.deleteById(id);
+    }
+
+    public void logAdView(Ad ad, HttpServletRequest request) throws IdInvalidException {
+        Optional<String> emailOpt = SecutiryUtil.getCurrentUserLogin();
+        if (emailOpt.isEmpty())
+            return;
+
+        String email = emailOpt.get();
+        User user = userRepository.findByEmail(email);
+        if (user == null)
+            throw new IdInvalidException("ko tim thay email");
+
+        AdView adView = new AdView();
+        adView.setAd(ad);
+        adView.setUser(user);
+        adView.setViewedAt(Instant.now());
+        adView.setDeviceInfo(request.getHeader("User-Agent"));
+        adView.setIpAddress(request.getRemoteAddr());
+
+        adViewRepository.save(adView);
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void deleteExpiredAds() {
+        Instant now = Instant.now();
+        List<Ad> expiredAds = adRepository.findByEndDateBefore(now);
+        if (!expiredAds.isEmpty()) {
+            adRepository.deleteAll(expiredAds);
+        }
     }
 }

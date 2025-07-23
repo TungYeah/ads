@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.minhtung.ads.domain.Role;
-import vn.minhtung.ads.domain.response.Role.RoleDTO;
+import vn.minhtung.ads.domain.response.role.RoleDTO;
 
 @Getter
 @Setter
