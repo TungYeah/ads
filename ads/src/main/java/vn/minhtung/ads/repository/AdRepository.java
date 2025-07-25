@@ -14,5 +14,5 @@ public interface AdRepository extends JpaRepository<Ad, Long>, JpaSpecificationE
 
     List<Ad> findByEndDateBefore(Instant endDate);
 
-
+    List<Ad> findByEndDateBetween(Instant startDate, Instant endDate);
 }

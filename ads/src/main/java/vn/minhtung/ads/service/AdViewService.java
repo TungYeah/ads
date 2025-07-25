@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import io.micrometer.core.instrument.Meter.Id;
 import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.AdView;
 import vn.minhtung.ads.domain.User;

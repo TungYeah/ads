@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Thông báo quảng cáo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #dddddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .table th {
+            background-color: #f0f0f0;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Thông báo quảng cáo [[${action}]]</h1>
+        <p>Xin chào <span class="highlight">[[${userName}]]</span>,</p>
+        <p>Quảng cáo <strong>[[${adTitle}]]</strong> của bạn đang sắp hết hạn.</p>
+
+        <table class="table">
+            <tr>
+                <th>Ngân sách tổng</th>
+                <td>[[${budgetTotal}]] đ</td>
+            </tr>
+            <tr>
+                <th>Đã sử dụng</th>
+                <td>[[${budgetUsed}]] đ</td>
+            </tr>
+            <tr>
+                <th>Thời gian</th>
+                <td>[[${timestamp}]]</td>
+            </tr>
+        </table>
+
+        <p>Vui lòng gia hạn nếu bạn muốn tiếp tục quảng cáo.</p>
+
+    </div>
+</body>
+
+</html>

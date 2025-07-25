@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.minhtung.ads.util.constant.StatusEnum;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
@@ -21,6 +23,10 @@ public class CreateAdDTO {
     private String imageUrl;
 
     private String targetUrl;
+
+    private StatusEnum status;
+
+    private BigDecimal budgetTotal;
 
     private Instant startDate;
     private Instant endDate;

@@ -1,6 +1,7 @@
 package vn.minhtung.ads.service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -17,8 +18,10 @@ import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import vn.minhtung.ads.domain.Ad;
+import vn.minhtung.ads.domain.AdBudget;
 import vn.minhtung.ads.domain.AdView;
 import vn.minhtung.ads.domain.Category;
 import vn.minhtung.ads.domain.User;
@@ -27,6 +30,7 @@ import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
 import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
 import vn.minhtung.ads.domain.response.ad.ResAdById;
+import vn.minhtung.ads.repository.AdBudgetRepository;
 import vn.minhtung.ads.repository.AdRepository;
 import vn.minhtung.ads.repository.AdViewReposiotry;
 import vn.minhtung.ads.repository.CategoryReposity;
@@ -35,21 +39,28 @@ import vn.minhtung.ads.util.SecutiryUtil;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @Service
+@Transactional
 public class AdService {
 
     private final AdRepository adRepository;
     private final UserRepository userRepository;
     private final CategoryReposity categoryReposity;
     private final AdViewReposiotry adViewRepository;
+    private final AdBudgetRepository adBudgetRepository;
+    private final EmailService emailService;
 
     public AdService(AdRepository adRepository,
             UserRepository userRepository,
             CategoryReposity categoryReposity,
-            AdViewReposiotry adViewRepository) {
+            AdViewReposiotry adViewRepository,
+            AdBudgetRepository adBudgetRepository,
+            EmailService emailService) {
         this.adRepository = adRepository;
         this.userRepository = userRepository;
         this.categoryReposity = categoryReposity;
         this.adViewRepository = adViewRepository;
+        this.adBudgetRepository = adBudgetRepository;
+        this.emailService = emailService;
     }
 
     private User getCurrentUser() {
@@ -68,6 +79,8 @@ public class AdService {
         ad.setDescription(dto.getDescription());
         ad.setImageUrl(dto.getImageUrl());
         ad.setTargetUrl(dto.getTargetUrl());
+        ad.setStatus(dto.getStatus());
+        ad.setBudgetTotal(dto.getBudgetTotal());
         ad.setStartDate(dto.getStartDate());
         ad.setEndDate(dto.getEndDate());
         ad.setUser(currentUser);
@@ -187,4 +200,17 @@ public class AdService {
             adRepository.deleteAll(expiredAds);
         }
     }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void notifyAdExpiringSoon() {
+        Instant now = Instant.now();
+        Instant nextDay = now.plus(1, ChronoUnit.DAYS);
+
+        List<Ad> adsExpiringSoon = adRepository.findByEndDateBetween(now, nextDay);
+        for (Ad ad : adsExpiringSoon) {
+            List<AdBudget> adBudgets = adBudgetRepository.findAllByAdId(ad.getId());
+            emailService.sendAdBudgetEmail(ad.getUser().getEmail(), ad, adBudgets, "sắp hết hạn");
+        }
+    }
+
 }
