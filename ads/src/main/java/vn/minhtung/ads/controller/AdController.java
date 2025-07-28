@@ -35,11 +35,12 @@ public class AdController {
 
     @GetMapping("/ads")
     public ResponseEntity<ResultPageinationDTO> getAllAds(@Filter Specification<Ad> spec, Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(this.adService.getAllAds(spec, pageable));
+        return ResponseEntity.status(HttpStatus.OK).body(this.adService.getAllAds(spec, pageable));
     }
 
     @GetMapping("/ads/{id}")
-    public ResponseEntity<ResAdById> getAdById(@PathVariable long id, HttpServletRequest request) throws IdInvalidException {
+    public ResponseEntity<ResAdById> getAdById(@PathVariable long id, HttpServletRequest request)
+            throws IdInvalidException {
         Ad adGetId = this.adService.getAdById(id);
         if (adGetId == null) {
             throw new IdInvalidException("Không tìm thấy id quảng cáo: " + id);

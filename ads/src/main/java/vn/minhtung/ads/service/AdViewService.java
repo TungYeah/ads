@@ -81,5 +81,4 @@ public class AdViewService {
         return adViewReposiotry.countByAdId(adId);
     }
 
-    
 }

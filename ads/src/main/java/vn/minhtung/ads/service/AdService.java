@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.apache.catalina.security.SecurityUtil;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,6 +37,7 @@ import vn.minhtung.ads.repository.AdViewReposiotry;
 import vn.minhtung.ads.repository.CategoryReposity;
 import vn.minhtung.ads.repository.UserRepository;
 import vn.minhtung.ads.util.SecutiryUtil;
+import vn.minhtung.ads.util.constant.StatusEnum;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @Service
@@ -110,6 +112,7 @@ public class AdService {
         return rs;
     }
 
+    @Cacheable(value = "ads", key = "#id")
     public Ad getAdById(long id) {
         return this.adRepository.findById(id).orElseThrow();
     }
@@ -196,9 +199,11 @@ public class AdService {
     public void deleteExpiredAds() {
         Instant now = Instant.now();
         List<Ad> expiredAds = adRepository.findByEndDateBefore(now);
-        if (!expiredAds.isEmpty()) {
-            adRepository.deleteAll(expiredAds);
+        for (Ad ad : expiredAds) {
+            ad.setStatus(StatusEnum.ARCHIVED);
         }
+
+        adRepository.saveAll(expiredAds);
     }
 
     @Scheduled(cron = "0 0 * * * *")
