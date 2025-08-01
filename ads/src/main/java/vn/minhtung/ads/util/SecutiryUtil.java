@@ -47,14 +47,14 @@ public class SecutiryUtil {
         List<String> listAuthority = new ArrayList<>();
         if (dto.getRole() != null && dto.getRole().getName() != null) {
             String roleName = dto.getRole().getName().toUpperCase();
-            listAuthority.add("ROLE_" + roleName); 
+            listAuthority.add("ROLE_" + roleName);
         }
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuedAt(now)
                 .expiresAt(validity)
                 .subject(email)
-                .claim("user", dto) 
+                .claim("user", dto)
                 .claim("permission", listAuthority)
                 .build();
 

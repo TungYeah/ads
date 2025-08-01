@@ -24,7 +24,7 @@ public class UpdateUserDTO {
 
     private String address;
 
-    private Instant updateAt;
+    private Instant updatedAt;
 
-    private Instant updateBy;
+    private String updatedBy;
 }

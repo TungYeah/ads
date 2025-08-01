@@ -29,7 +29,6 @@ public class Ad {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
     private String imageUrl;
 
     private String targetUrl;

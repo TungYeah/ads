@@ -4,7 +4,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 
@@ -14,7 +13,9 @@ import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
 import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
 import vn.minhtung.ads.domain.response.ad.ResAdById;
+import vn.minhtung.ads.domain.response.ad.UpdateAdDTO;
 import vn.minhtung.ads.service.AdService;
+import vn.minhtung.ads.mapper.AdMapper;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @RestController
@@ -22,13 +23,15 @@ import vn.minhtung.ads.util.errors.IdInvalidException;
 public class AdController {
 
     private final AdService adService;
+    private final AdMapper adMapper;
 
-    public AdController(AdService adService) {
+    public AdController(AdService adService, AdMapper adMapper) {
         this.adService = adService;
+        this.adMapper = adMapper;
     }
 
     @PostMapping("/ads")
-    public ResponseEntity<CreateAdDTO> createAd(@Valid @RequestBody CreateAdDTO dto) {
+    public ResponseEntity<CreateAdDTO> createAd(@Valid @RequestBody CreateAdDTO dto) throws IdInvalidException {
         CreateAdDTO responseDTO = this.adService.handleAd(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
@@ -41,20 +44,20 @@ public class AdController {
     @GetMapping("/ads/{id}")
     public ResponseEntity<ResAdById> getAdById(@PathVariable long id, HttpServletRequest request)
             throws IdInvalidException {
-        Ad adGetId = this.adService.getAdById(id);
-        if (adGetId == null) {
+        Ad ad = this.adService.getAdById(id);
+        if (ad == null) {
             throw new IdInvalidException("Không tìm thấy id quảng cáo: " + id);
         }
-        adService.logAdView(adGetId, request);
-        Ad ad = this.adService.getAdById(id);
+        adService.logAdView(ad, request);
         return ResponseEntity.status(HttpStatus.OK).body(this.adService.convertToGetAdByIdDTO(ad));
     }
 
     @PutMapping("/ads/{id}")
-    public ResponseEntity<Ad> updateAdById(@PathVariable long id, @Valid @RequestBody Ad updateData) {
-        updateData.setId(id);
-        Ad updatedAd = this.adService.updateAd(updateData);
-        return ResponseEntity.status(HttpStatus.OK).body(updatedAd);
+    public ResponseEntity<UpdateAdDTO> updateAd(@PathVariable long id, @RequestBody UpdateAdDTO dto)
+            throws IdInvalidException {
+        Ad updatedAd = adService.updateAd(id, dto);
+        UpdateAdDTO response = adMapper.toUpdateAdDTO(updatedAd);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/ads/{id}")
@@ -64,6 +67,6 @@ public class AdController {
             throw new IdInvalidException("User khong ton tai Id" + id);
         }
         adService.deleteAdById(id);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 }

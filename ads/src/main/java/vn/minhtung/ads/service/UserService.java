@@ -1,5 +1,6 @@
 package vn.minhtung.ads.service;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -7,15 +8,14 @@ import org.springframework.stereotype.Service;
 
 import vn.minhtung.ads.domain.Role;
 import vn.minhtung.ads.domain.User;
-import vn.minhtung.ads.domain.dto.*;
-import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
-import vn.minhtung.ads.domain.response.ad.GetAdByIdDTO;
-import vn.minhtung.ads.domain.response.role.RoleDTO;
-import vn.minhtung.ads.domain.response.role.RoleDTO.PermissionDTO;
+import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+
 import vn.minhtung.ads.domain.response.user.CreateUserDTO;
 import vn.minhtung.ads.domain.response.user.GetUserByIdDTO;
 import vn.minhtung.ads.domain.response.user.UpdateUserDTO;
+import vn.minhtung.ads.mapper.UserMapper;
 import vn.minhtung.ads.repository.UserRepository;
+import vn.minhtung.ads.util.PaginationUtil;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 import java.util.List;
@@ -27,15 +27,17 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleService roleService;
+    private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository, RoleService roleService) {
+    public UserService(UserRepository userRepository, RoleService roleService, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.roleService = roleService;
+        this.userMapper = userMapper;
     }
 
     public User handleUser(User user) throws IdInvalidException {
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IdInvalidException("Email already exits");
+            throw new IdInvalidException("Email already exists");
         }
         if (user.getRole() != null) {
             Role role = this.roleService.getById(user.getRole().getId());
@@ -46,80 +48,36 @@ public class UserService {
 
     public ResultPageinationDTO getAllUsers(Specification<User> spec, Pageable pageable) {
         Page<User> pageUser = this.userRepository.findAll(spec, pageable);
-        ResultPageinationDTO rs = new ResultPageinationDTO();
-        Meta mt = new Meta();
-
-        mt.setPage(pageUser.getNumber() + 1);
-        mt.setPageSize(pageUser.getSize());
-        mt.setPages(pageUser.getTotalPages());
-        mt.setTotal(pageUser.getTotalElements());
-        rs.setMeta(mt);
-
-        List<GetUserByIdDTO> listUser = pageUser.getContent()
-                .stream().map(user -> {
-                    List<GetAdByIdDTO> ads = user.getAdsList()
-                            .stream()
-                            .map(ad -> new GetAdByIdDTO(
-                                    ad.getId(),
-                                    ad.getTitle(),
-                                    ad.getDescription(),
-                                    ad.getImageUrl(),
-                                    ad.getTargetUrl(),
-                                    ad.getStartDate(),
-                                    ad.getEndDate()))
-                            .collect(Collectors.toList());
-
-                    RoleDTO roleDTO = new RoleDTO();
-                    if (user.getRole() != null) {
-                        Role role = user.getRole();
-                        List<PermissionDTO> permissionDTOs = role.getPermissions() != null
-                                ? role.getPermissions().stream()
-                                        .map(p -> new PermissionDTO(p.getId(), p.getName()))
-                                        .collect(Collectors.toList())
-                                : null;
-
-                        roleDTO = new RoleDTO(role.getId(), role.getName(), permissionDTOs);
-                    }
-
-                    return new GetUserByIdDTO(
-                            user.getId(),
-                            user.getName(),
-                            user.getEmail(),
-                            user.getAge(),
-                            user.getGender(),
-                            user.getAddress(),
-                            user.getCreatedAt(),
-                            user.getUpdatedAt(),
-                            ads,
-                            roleDTO);
-                }).collect(Collectors.toList());
-
-        rs.setResult(listUser);
-        return rs;
+        List<GetUserByIdDTO> users = pageUser.getContent()
+                .stream()
+                .map(userMapper::toGetUserByIdDTO)
+                .collect(Collectors.toList());
+        return PaginationUtil.build(pageUser, users);
     }
 
-    public User getUserById(long id) {
-        return this.userRepository.findById(id).orElseThrow();
+    public GetUserByIdDTO getUserDTOById(long id) {
+        User user = userRepository.findById(id).orElseThrow();
+        return userMapper.toGetUserByIdDTO(user);
     }
 
-    public User updateUser(long id, User updatedUser) {
-        User currentUser = this.getUserById(updatedUser.getId());
-        if (currentUser != null) {
-            currentUser.setAddress(updatedUser.getAddress());
-            currentUser.setGender(updatedUser.getGender());
-            currentUser.setAge(updatedUser.getAge());
-            currentUser.setName(updatedUser.getName());
-            currentUser = this.userRepository.save(currentUser);
-
-            if (updatedUser.getRole() != null) {
-                Role role = this.roleService.getById(updatedUser.getRole().getId());
-                currentUser.setRole(role != null ? role : null);
-            }
-            currentUser = this.userRepository.save(currentUser);
-        }
-        return currentUser;
+    public User getUserById(long id) throws IdInvalidException {
+        return userRepository.findById(id).orElseThrow(() -> new IdInvalidException("User not found"));
     }
 
+    @CacheEvict(value = "users", key = "#id")
+    public UpdateUserDTO updateUser(long id, UpdateUserDTO updatedDto) throws IdInvalidException {
+        User currentUser = this.getUserById(id);
+        currentUser.setAddress(updatedDto.getAddress());
+        currentUser.setGender(updatedDto.getGender());
+        currentUser.setAge(updatedDto.getAge());
+        currentUser.setName(updatedDto.getName());
+        currentUser.setUpdatedAt(updatedDto.getUpdatedAt());
+        currentUser.setUpdatedBy(updatedDto.getUpdatedBy());
+
+        return userMapper.toUpdateUserDTO(this.userRepository.save(currentUser));
+    }
+
+    @CacheEvict(value = "users", key = "#id")
     public void deleteUser(long id) {
         if (!userRepository.existsById(id)) {
             throw new NoSuchElementException("User not found");
@@ -129,53 +87,6 @@ public class UserService {
 
     public User handleGetUserByUsername(String name) {
         return this.userRepository.findByEmail(name);
-    }
-
-    public CreateUserDTO convertUserDTO(User user) {
-        CreateUserDTO createUserDTO = new CreateUserDTO();
-        createUserDTO.setId(user.getId());
-        createUserDTO.setName(user.getName());
-        createUserDTO.setEmail(user.getEmail());
-        createUserDTO.setAge(user.getAge());
-        createUserDTO.setCreatedAt(user.getCreatedAt());
-        createUserDTO.setGender(user.getGender());
-        createUserDTO.setAddress(user.getAddress());
-        return createUserDTO;
-    }
-
-    public GetUserByIdDTO convertUserByIdDTO(User user) {
-        GetUserByIdDTO getUserByIdDTO = new GetUserByIdDTO();
-        getUserByIdDTO.setId(user.getId());
-        getUserByIdDTO.setName(user.getName());
-        getUserByIdDTO.setEmail(user.getEmail());
-        getUserByIdDTO.setAge(user.getAge());
-        getUserByIdDTO.setCreatedAt(user.getCreatedAt());
-        getUserByIdDTO.setGender(user.getGender());
-        getUserByIdDTO.setAddress(user.getAddress());
-        getUserByIdDTO.setUpdateAt(user.getUpdatedAt());
-        List<GetAdByIdDTO> adDTOs = user.getAdsList().stream()
-                .map(ad -> new GetAdByIdDTO(
-                        ad.getId(),
-                        ad.getTitle(),
-                        ad.getDescription(),
-                        ad.getImageUrl(),
-                        ad.getTargetUrl(),
-                        ad.getStartDate(),
-                        ad.getEndDate()))
-                .collect(Collectors.toList());
-        getUserByIdDTO.setAds(adDTOs);
-        return getUserByIdDTO;
-    }
-
-    public UpdateUserDTO convertUpdateUserDTO(User user) {
-        UpdateUserDTO updateUserDTO = new UpdateUserDTO();
-        updateUserDTO.setId(user.getId());
-        updateUserDTO.setName(user.getName());
-        updateUserDTO.setAge(user.getAge());
-        updateUserDTO.setGender(user.getGender());
-        updateUserDTO.setAddress(user.getAddress());
-        updateUserDTO.setUpdateAt(user.getUpdatedAt());
-        return updateUserDTO;
     }
 
     public void updateUserToken(String token, String email) {
@@ -188,5 +99,9 @@ public class UserService {
 
     public User getUserByRefreshTokenAndEmail(String token, String email) {
         return this.userRepository.findByRefreshTokenAndEmail(token, email);
+    }
+
+    public CreateUserDTO convertUserDTO(User user) {
+        return userMapper.toCreateUserDTO(user);
     }
 }

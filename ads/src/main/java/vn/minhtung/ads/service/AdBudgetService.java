@@ -2,12 +2,10 @@ package vn.minhtung.ads.service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import vn.minhtung.ads.domain.Ad;
@@ -15,6 +13,7 @@ import vn.minhtung.ads.domain.AdBudget;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
 import vn.minhtung.ads.repository.AdBudgetRepository;
 import vn.minhtung.ads.repository.AdRepository;
+import vn.minhtung.ads.util.PaginationUtil;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @Service
@@ -58,26 +57,7 @@ public class AdBudgetService {
 
     public ResultPageinationDTO getAllAdBudget(Specification<AdBudget> spec, Pageable pageable) {
         Page<AdBudget> adBudgets = this.adBudgetRepository.findAll(spec, pageable);
-        ResultPageinationDTO rs = new ResultPageinationDTO();
-        ResultPageinationDTO.Meta mt = new ResultPageinationDTO.Meta();
-        mt.setPage(pageable.getPageNumber() + 1);
-        mt.setPageSize(pageable.getPageSize());
-
-        mt.setPages(adBudgets.getTotalPages());
-        mt.setTotal(adBudgets.getTotalElements());
-
-        rs.setMeta(mt);
-        List<AdBudget> listAdBudgets = adBudgets.getContent()
-                .stream().map(item -> new AdBudget(
-                        item.getId(),
-                        item.getAd(),
-                        item.getDate(),
-                        item.getCost(),
-                        item.getNote(),
-                        item.getCreatedAt()))
-                .collect(Collectors.toList());
-        rs.setResult(listAdBudgets);
-        return rs;
+        return PaginationUtil.build(adBudgets, adBudgets.getContent());
     }
 
     public AdBudget getAdBudgetById(long id) throws IdInvalidException {

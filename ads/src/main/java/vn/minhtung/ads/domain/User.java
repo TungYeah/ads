@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 import vn.minhtung.ads.util.SecutiryUtil;
 import vn.minhtung.ads.util.constant.GenderEnum;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

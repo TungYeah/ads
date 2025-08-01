@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import org.apache.catalina.security.SecurityUtil;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,10 +16,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import vn.minhtung.ads.domain.Ad;
 import vn.minhtung.ads.domain.AdBudget;
 import vn.minhtung.ads.domain.AdView;
@@ -28,18 +26,21 @@ import vn.minhtung.ads.domain.Category;
 import vn.minhtung.ads.domain.User;
 
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
-import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
 import vn.minhtung.ads.domain.response.ad.CreateAdDTO;
 import vn.minhtung.ads.domain.response.ad.ResAdById;
+import vn.minhtung.ads.domain.response.ad.UpdateAdDTO;
+import vn.minhtung.ads.mapper.AdMapper;
 import vn.minhtung.ads.repository.AdBudgetRepository;
 import vn.minhtung.ads.repository.AdRepository;
 import vn.minhtung.ads.repository.AdViewReposiotry;
 import vn.minhtung.ads.repository.CategoryReposity;
 import vn.minhtung.ads.repository.UserRepository;
+import vn.minhtung.ads.util.PaginationUtil;
 import vn.minhtung.ads.util.SecutiryUtil;
 import vn.minhtung.ads.util.constant.StatusEnum;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
+@Slf4j
 @Service
 @Transactional
 public class AdService {
@@ -50,122 +51,90 @@ public class AdService {
     private final AdViewReposiotry adViewRepository;
     private final AdBudgetRepository adBudgetRepository;
     private final EmailService emailService;
+    private final AdMapper adMapper;
 
     public AdService(AdRepository adRepository,
             UserRepository userRepository,
             CategoryReposity categoryReposity,
             AdViewReposiotry adViewRepository,
             AdBudgetRepository adBudgetRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            AdMapper adMapper) {
         this.adRepository = adRepository;
         this.userRepository = userRepository;
         this.categoryReposity = categoryReposity;
         this.adViewRepository = adViewRepository;
         this.adBudgetRepository = adBudgetRepository;
         this.emailService = emailService;
+        this.adMapper = adMapper;
     }
 
-    private User getCurrentUser() {
+    private User getCurrentUser() throws IdInvalidException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication.getPrincipal() instanceof Jwt jwt)) {
-            throw new RuntimeException("Không xác thực được người dùng từ token");
+            throw new IdInvalidException("Không xác thực được người dùng từ token");
         }
         String email = jwt.getSubject();
         return userRepository.findByEmail(email);
     }
 
-    public CreateAdDTO handleAd(CreateAdDTO dto) {
+    @Cacheable(value = "categories", key = "#name")
+    public Category getCategoryByName(String name) throws IdInvalidException {
+        return categoryReposity.findByName(name)
+                .orElseThrow(() -> new IdInvalidException("Category not found"));
+    }
+
+    public CreateAdDTO handleAd(CreateAdDTO dto) throws IdInvalidException {
         User currentUser = getCurrentUser();
-        Ad ad = new Ad();
-        ad.setTitle(dto.getTitle());
-        ad.setDescription(dto.getDescription());
-        ad.setImageUrl(dto.getImageUrl());
-        ad.setTargetUrl(dto.getTargetUrl());
-        ad.setStatus(dto.getStatus());
-        ad.setBudgetTotal(dto.getBudgetTotal());
-        ad.setStartDate(dto.getStartDate());
-        ad.setEndDate(dto.getEndDate());
+        Ad ad = adMapper.toEntity(dto);
         ad.setUser(currentUser);
-        Category category = categoryReposity.findByName(dto.getCategory())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        ad.setCategory(category);
+        ad.setCategory(getCategoryByName(dto.getCategory()));
         Ad savedAd = adRepository.save(ad);
-        return convertAdDTO(savedAd);
+        log.info("Tạo mới quảng cáo ID: {}", savedAd.getId());
+        return adMapper.toCreateAdDTO(savedAd);
     }
 
     public ResultPageinationDTO getAllAds(Specification<Ad> spec, Pageable pageable) {
         Page<Ad> ads = this.adRepository.findAll(spec, pageable);
-
-        List<CreateAdDTO> adDTOs = ads.stream()
-                .map(this::convertAdDTO)
-                .toList();
-
-        Meta mt = new Meta();
-        mt.setPage(ads.getNumber() + 1);
-        mt.setPageSize(ads.getSize());
-        mt.setPages(ads.getTotalPages());
-        mt.setTotal(ads.getTotalElements());
-
-        ResultPageinationDTO rs = new ResultPageinationDTO();
-        rs.setMeta(mt);
-        rs.setResult(adDTOs);
-        return rs;
+        List<CreateAdDTO> adDTOs = adMapper.toCreateAdDTOs(ads.getContent());
+        return PaginationUtil.build(ads, adDTOs);
     }
 
     @Cacheable(value = "ads", key = "#id")
     public Ad getAdById(long id) {
+        log.debug("Tìm quảng cáo theo ID: {}", id);
         return this.adRepository.findById(id).orElseThrow();
     }
 
-    public Ad updateAd(Ad ad) {
-        Optional<Ad> updateAd = this.adRepository.findById(ad.getId());
-        if (updateAd.isPresent()) {
-            Ad currentAd = updateAd.get();
-            currentAd.setTitle(ad.getTitle());
-            currentAd.setDescription(ad.getDescription());
-            currentAd.setImageUrl(ad.getImageUrl());
-            currentAd.setTargetUrl(ad.getTargetUrl());
-            currentAd.setStartDate(ad.getStartDate());
-            currentAd.setEndDate(ad.getEndDate());
-            return this.adRepository.save(currentAd);
+    public Ad updateAd(long id, UpdateAdDTO dto) throws IdInvalidException {
+        Ad ad = adRepository.findById(id)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy quảng cáo ID: " + id));
+
+        adMapper.updateAdFromDTO(dto, ad);
+
+        if (dto.getCategory() != null) {
+            Category category = categoryReposity.findByName(dto.getCategory())
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy danh mục: " + dto.getCategory()));
+            ad.setCategory(category);
         }
-        return null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() instanceof Jwt jwt) {
+            ad.setUpdatedBy(jwt.getSubject());
+        }
+        return adRepository.save(ad);
     }
 
-    public void deleteAdById(long id) {
+    public void deleteAdById(long id) throws IdInvalidException {
         if (!adRepository.existsById(id)) {
-            throw new NoSuchElementException("Không tìm thấy quảng cáo với ID " + id);
+            log.warn("Xóa thất bại. Không tồn tại quảng cáo ID: {}", id);
+            throw new IdInvalidException("Không tìm thấy quảng cáo với ID " + id);
         }
         this.adRepository.deleteById(id);
-    }
-
-    public CreateAdDTO convertAdDTO(Ad ad) {
-        CreateAdDTO createAdDTO = new CreateAdDTO();
-        createAdDTO.setId(ad.getId());
-        createAdDTO.setTitle(ad.getTitle());
-        createAdDTO.setDescription(ad.getDescription());
-        createAdDTO.setImageUrl(ad.getImageUrl());
-        createAdDTO.setTargetUrl(ad.getTargetUrl());
-        createAdDTO.setStartDate(ad.getStartDate());
-        createAdDTO.setEndDate(ad.getEndDate());
-
-        if (ad.getCategory() != null) {
-            createAdDTO.setCategory(ad.getCategory().getName());
-        }
-        return createAdDTO;
+        log.info("Đã xóa quảng cáo ID: {}", id);
     }
 
     public ResAdById convertToGetAdByIdDTO(Ad ad) {
-        ResAdById getAdByIdDTO = new ResAdById();
-        getAdByIdDTO.setId(ad.getId());
-        getAdByIdDTO.setTitle(ad.getTitle());
-        getAdByIdDTO.setDescription(ad.getDescription());
-        getAdByIdDTO.setImageUrl(ad.getImageUrl());
-        getAdByIdDTO.setTargetUrl(ad.getTargetUrl());
-        getAdByIdDTO.setStartDate(ad.getStartDate());
-        getAdByIdDTO.setEndDate(ad.getEndDate());
-        getAdByIdDTO.setCategory(ad.getCategory().getName());
-        return getAdByIdDTO;
+        return adMapper.toResAdById(ad);
     }
 
     public void deleteAd(long id) {
@@ -193,6 +162,7 @@ public class AdService {
         adView.setIpAddress(request.getRemoteAddr());
 
         adViewRepository.save(adView);
+        log.debug("Ghi nhận lượt xem quảng cáo ID: {} từ user: {}", ad.getId(), user.getEmail());
     }
 
     @Scheduled(cron = "0 * * * * *")
@@ -201,8 +171,8 @@ public class AdService {
         List<Ad> expiredAds = adRepository.findByEndDateBefore(now);
         for (Ad ad : expiredAds) {
             ad.setStatus(StatusEnum.ARCHIVED);
+            log.info("Đánh dấu quảng cáo ID: {} là ARCHIVED", ad.getId());
         }
-
         adRepository.saveAll(expiredAds);
     }
 
@@ -215,7 +185,7 @@ public class AdService {
         for (Ad ad : adsExpiringSoon) {
             List<AdBudget> adBudgets = adBudgetRepository.findAllByAdId(ad.getId());
             emailService.sendAdBudgetEmail(ad.getUser().getEmail(), ad, adBudgets, "sắp hết hạn");
+            log.info("Gửi email cảnh báo hết hạn quảng cáo ID: {} cho user: {}", ad.getId(), ad.getUser().getEmail());
         }
     }
-
 }

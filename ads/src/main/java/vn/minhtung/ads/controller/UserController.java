@@ -21,7 +21,6 @@ import vn.minhtung.ads.util.errors.IdInvalidException;
 @RequestMapping("/api/v1")
 public class UserController {
     private final UserService userService;
-
     private final PasswordEncoder passwordEncoder;
 
     public UserController(UserService userService, PasswordEncoder passwordEncoder) {
@@ -47,32 +46,28 @@ public class UserController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<GetUserByIdDTO> getUserById(@PathVariable long id) throws IdInvalidException {
-        User getUserById = this.userService.getUserById(id);
-        if (getUserById == null) {
-            throw new IdInvalidException("Khong tim thay id nguoi dung" + id);
-        }
-        User user = this.userService.getUserById(id);
-        return ResponseEntity.status(HttpStatus.OK).body(this.userService.convertUserByIdDTO(user));
+        GetUserByIdDTO userDTO = this.userService.getUserDTOById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(userDTO);
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<UpdateUserDTO> updateUserById(@PathVariable("id") long id, @RequestBody User user)
+    public ResponseEntity<UpdateUserDTO> updateUserById(@PathVariable("id") long id, @RequestBody UpdateUserDTO dto)
             throws IdInvalidException {
-        User currentUser = this.userService.getUserById(id);
-        if (currentUser == null) {
-            throw new IdInvalidException("Ko ton tai id" + id);
+        if (dto.getId() > 0 && dto.getId() != id) {
+            throw new IdInvalidException("ID không khớp với đường dẫn");
         }
-        User result = this.userService.updateUser(id, user);
-        return ResponseEntity.ok(this.userService.convertUpdateUserDTO(result));
+
+        UpdateUserDTO updatedUser = this.userService.updateUser(id, dto);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<Void> deleteUserById(@PathVariable("id") long id) throws IdInvalidException {
-        User curretUser = this.userService.getUserById(id);
-        if (curretUser == null) {
-            throw new IdInvalidException("User khong ton tai Id" + id);
+        User currentUser = this.userService.getUserById(id);
+        if (currentUser == null) {
+            throw new IdInvalidException("Không tồn tại người dùng với ID: " + id);
         }
         userService.deleteUser(id);
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok().build();
     }
 }

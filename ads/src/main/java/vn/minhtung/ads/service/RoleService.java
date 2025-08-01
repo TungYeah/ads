@@ -12,25 +12,32 @@ import org.springframework.stereotype.Service;
 import vn.minhtung.ads.domain.Permission;
 import vn.minhtung.ads.domain.Role;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
+import vn.minhtung.ads.domain.response.role.RoleDTO;
+import vn.minhtung.ads.mapper.RoleMapper;
 import vn.minhtung.ads.repository.PermissionRepository;
 import vn.minhtung.ads.repository.RoleRepository;
-
+import vn.minhtung.ads.util.PaginationUtil;
 
 @Service
 public class RoleService {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final RoleMapper roleMapper;
 
-    public RoleService(RoleRepository roleRepository, PermissionRepository permissionRepository) {
+    public RoleService(
+            RoleRepository roleRepository,
+            PermissionRepository permissionRepository,
+            RoleMapper roleMapper) {
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
+        this.roleMapper = roleMapper;
     }
 
     public Role createRole(Role r) {
         if (r.getPermissions() != null) {
             List<Long> reqPermissions = r.getPermissions()
-                    .stream().map(x -> x.getId())
+                    .stream().map(Permission::getId)
                     .collect(Collectors.toList());
 
             List<Permission> dbPermissions = this.permissionRepository.findByIdIn(reqPermissions);
@@ -41,25 +48,13 @@ public class RoleService {
 
     public ResultPageinationDTO getAllRoles(Specification<Role> spec, Pageable pageable) {
         Page<Role> pRole = this.roleRepository.findAll(spec, pageable);
-        ResultPageinationDTO rs = new  ResultPageinationDTO();
-        ResultPageinationDTO.Meta mt = new  ResultPageinationDTO.Meta();
-
-        mt.setPage(pageable.getPageNumber() + 1);
-        mt.setPageSize(pageable.getPageSize());
-
-        mt.setPages(pRole.getTotalPages());
-        mt.setTotal(pRole.getTotalElements());
-
-        rs.setMeta(mt);
-        rs.setResult(pRole.getContent());
-        return rs;
+        List<RoleDTO> dtos = roleMapper.toRoleDTOs(pRole.getContent());
+        return PaginationUtil.build(pRole, dtos);
     }
 
     public Role getById(long id) {
         Optional<Role> roleOptional = this.roleRepository.findById(id);
-        if (roleOptional.isPresent())
-            return roleOptional.get();
-        return null;
+        return roleOptional.orElse(null);
     }
 
     public boolean existByName(String name) {
@@ -70,22 +65,22 @@ public class RoleService {
         Role role = this.getById(id);
         if (r.getPermissions() != null) {
             List<Long> reqPermissions = r.getPermissions()
-                    .stream().map(x -> x.getId())
+                    .stream().map(Permission::getId)
                     .collect(Collectors.toList());
 
             List<Permission> dbPermissions = this.permissionRepository.findByIdIn(reqPermissions);
             r.setPermissions(dbPermissions);
         }
+
         role.setName(r.getName());
         role.setDescription(r.getDescription());
         role.setActive(r.isActive());
         role.setPermissions(r.getPermissions());
-        role = this.roleRepository.save(role);
-        return role;
+
+        return this.roleRepository.save(role);
     }
 
     public void delete(long id) {
         this.roleRepository.deleteById(id);
     }
-
 }

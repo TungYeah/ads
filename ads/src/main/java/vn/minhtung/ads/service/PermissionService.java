@@ -3,112 +3,85 @@ package vn.minhtung.ads.service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import jakarta.persistence.EntityNotFoundException;
+
 import vn.minhtung.ads.domain.Permission;
 import vn.minhtung.ads.domain.dto.ResultPageinationDTO;
-import vn.minhtung.ads.domain.dto.ResultPageinationDTO.Meta;
 import vn.minhtung.ads.domain.response.permission.GetPermissionByIdDTO;
 import vn.minhtung.ads.domain.response.permission.UpdatePermissionByIdDTO;
+import vn.minhtung.ads.mapper.PermissionMapper;
 import vn.minhtung.ads.repository.PermissionRepository;
+import vn.minhtung.ads.util.PaginationUtil;
 import vn.minhtung.ads.util.errors.IdInvalidException;
 
 @Service
 public class PermissionService {
 
-    private final PermissionRepository permissionReposity;
+    private final PermissionRepository permissionRepository;
+    private final PermissionMapper permissionMapper;
 
-    public PermissionService(PermissionRepository permissionReposity) {
-        this.permissionReposity = permissionReposity;
+    public PermissionService(PermissionRepository permissionRepository, PermissionMapper permissionMapper) {
+        this.permissionRepository = permissionRepository;
+        this.permissionMapper = permissionMapper;
     }
-    
 
     public Permission handlePermission(Permission permission) throws IdInvalidException {
-        if (permissionReposity.existsByApiPathAndMethodAndModule(permission.getApiPath(), permission.getMethod(),
+        if (permissionRepository.existsByApiPathAndMethodAndModule(permission.getApiPath(), permission.getMethod(),
                 permission.getModule())) {
-            throw new IdInvalidException("Permission already exits");
+            throw new IdInvalidException("Permission already exists");
         }
-        return this.permissionReposity.save(permission);
+        return this.permissionRepository.save(permission);
     }
 
     public ResultPageinationDTO getAllPermissions(Specification<Permission> spec, Pageable pageable) {
-        Page<Permission> pagePermission = this.permissionReposity.findAll(spec, pageable);
-        ResultPageinationDTO rs = new ResultPageinationDTO();
-        Meta mt = new Meta();
-
-        mt.setPage(pagePermission.getNumber() + 1);
-        mt.setPageSize(pagePermission.getSize());
-        mt.setPages(pagePermission.getTotalPages());
-        mt.setTotal(pagePermission.getTotalElements());
-        rs.setMeta(mt);
-
-        List<GetPermissionByIdDTO> listPermissions = pagePermission.getContent()
+        Page<Permission> pagePermission = this.permissionRepository.findAll(spec, pageable);
+        List<GetPermissionByIdDTO> list = pagePermission.getContent()
                 .stream()
-                .map(permission -> new GetPermissionByIdDTO(
-                        permission.getId(),
-                        permission.getName(),
-                        permission.getApiPath(),
-                        permission.getMethod(),
-                        permission.getModule(),
-                        permission.getCreatedAt(),
-                        permission.getCreatedBy(),
-                        permission.getUpdatedAt(),
-                        permission.getUpdatedBy()))
+                .map(permissionMapper::toGetPermissionByIdDTO)
                 .collect(Collectors.toList());
 
-        rs.setResult(listPermissions);
-        return rs;
+        return PaginationUtil.build(pagePermission, list);
     }
 
+    @Cacheable(value = "permissions", key = "#id")
     public Permission getPermissionById(long id) throws IdInvalidException {
-        return this.permissionReposity.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Permission not found with id: "));
+        return this.permissionRepository.findById(id)
+                .orElseThrow(() -> new IdInvalidException("Permission not found with id: " + id));
     }
 
+    @CacheEvict(value = "permissions", key = "#id")
     public Permission updatePermission(long id, Permission updatedPermission) throws IdInvalidException {
-        Permission currentPermission = this.getPermissionById(id);
-        if (currentPermission == null) {
+        Permission current = this.getPermissionById(id);
+        if (current == null) {
             throw new EntityNotFoundException("Permission not found with id: " + id);
         }
-        currentPermission.setName(updatedPermission.getName());
-        currentPermission.setApiPath(updatedPermission.getApiPath());
-        currentPermission.setMethod(updatedPermission.getMethod());
-        currentPermission.setModule(updatedPermission.getModule());
+        current.setName(updatedPermission.getName());
+        current.setApiPath(updatedPermission.getApiPath());
+        current.setMethod(updatedPermission.getMethod());
+        current.setModule(updatedPermission.getModule());
 
-        return this.permissionReposity.save(currentPermission);
+        return this.permissionRepository.save(current);
     }
 
     public GetPermissionByIdDTO convertToGetPermissionByIdDTO(Permission permission) {
-        return new GetPermissionByIdDTO(
-                permission.getId(),
-                permission.getName(),
-                permission.getApiPath(),
-                permission.getMethod(),
-                permission.getModule(),
-                permission.getCreatedAt(),
-                permission.getCreatedBy(),
-                permission.getUpdatedAt(),
-                permission.getUpdatedBy());
+        return permissionMapper.toGetPermissionByIdDTO(permission);
     }
 
     public UpdatePermissionByIdDTO convPermissionByIdDTO(Permission permission) {
-        return new UpdatePermissionByIdDTO(
-                permission.getName(),
-                permission.getApiPath(),
-                permission.getMethod(),
-                permission.getModule(),
-                permission.getUpdatedAt(),
-                permission.getUpdatedBy());
+        return permissionMapper.toUpdatePermissionByIdDTO(permission);
     }
 
-     public void deletePermission(long id) {
-        if (!permissionReposity.existsById(id)) {
-            throw new NoSuchElementException("User not found");
+    public void deletePermission(long id) {
+        if (!permissionRepository.existsById(id)) {
+            throw new NoSuchElementException("Permission not found");
         }
-        this.permissionReposity.deleteById(id);
+        this.permissionRepository.deleteById(id);
     }
-
 }

@@ -7,8 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.mail.MailException;
-import org.springframework.mail.MailSender;
-import org.springframework.mail.SimpleMailMessage;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -24,12 +23,10 @@ import vn.minhtung.ads.domain.AdBudget;
 @Service
 public class EmailService {
 
-    private final MailSender mailSender;
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
 
-    public EmailService(MailSender mailSender, JavaMailSender javaMailSender, TemplateEngine templateEngine) {
-        this.mailSender = mailSender;
+    public EmailService( JavaMailSender javaMailSender, TemplateEngine templateEngine) {
         this.javaMailSender = javaMailSender;
         this.templateEngine = templateEngine;
     }
